@@ -1,5 +1,5 @@
 import streamlit as st
-from google import genai
+import google.generativeai as genai
 
 # Setup the page layout
 st.set_page_config(page_title="Andromeda Ad Angle Generator", page_icon="🎥", layout="centered")
@@ -7,9 +7,9 @@ st.set_page_config(page_title="Andromeda Ad Angle Generator", page_icon="🎥", 
 st.title("🎥 Andromeda Ad Angle Generator")
 st.write("Generate 10 conceptually diverse video hooks optimized for Meta's Andromeda algorithm.")
 
-# Securely grab the API key from Streamlit secrets
+# Securely grab the API key
 api_key = st.secrets["GEMINI_API_KEY"]
-client = genai.Client(api_key=api_key)
+genai.configure(api_key=api_key)
 
 # The UI Inputs
 product_name = st.text_input("Product Name (e.g., CGS Authentic Gold Necklace)")
@@ -27,6 +27,7 @@ For each angle provide:
 CRITICAL CONSTRAINTS: 
 - ALWAYS emphasize "Cash on Delivery" and "Free Shipping".
 - NEVER use "Buy 1 Take 1". 
+- NEVER include or invent fictional endorser characters (e.g., do not use names like "Master Nanyin").
 - Do NOT generate actual video files, only text mockups.
 """
 
@@ -35,13 +36,13 @@ if st.button("Generate 10 Ad Angles"):
         st.warning("Please enter a product name.")
     else:
         with st.spinner("Analyzing algorithm and generating angles..."):
-            prompt = f"System Instructions: {system_instruction}\n\nProduct Name: {product_name}\nDetails & Offer: {product_details}"
+            # Call the stable Gemini AI model
+            model = genai.GenerativeModel('gemini-1.5-flash', system_instruction=system_instruction)
+            prompt = f"Product Name: {product_name}\nDetails & Offer: {product_details}"
             
-            # Call the free Gemini AI model using the new SDK
-            response = client.models.generate_content(
-                model='gemini-1.5-flash',
-                contents=prompt
-            )
-            
-            st.success("Angles Generated!")
-            st.markdown(response.text)
+            try:
+                response = model.generate_content(prompt)
+                st.success("Angles Generated!")
+                st.markdown(response.text)
+            except Exception as e:
+                st.error(f"Google API Error: {e}")
